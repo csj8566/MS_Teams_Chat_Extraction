@@ -9,14 +9,14 @@ from memory import get_chat_history, save_chat_history
 
 
 load_dotenv()
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI(title="AI 챗봇")
 
 # OpenAI 클라이언트 초기화
 client = OpenAI(
-    api_key=PERPLEXITY_API_KEY,
-    base_url="https://api.perplexity.ai"
+    api_key=OPENAI_API_KEY,
+    base_url="https://api.openai.com/v1"
 )
 
 app.add_middleware(
@@ -51,31 +51,41 @@ def chat(request: ChatRequest):
         context = "\n".join(retrieved_docs)
         
         # LLM 에 전달할 메시지 구성
-        messages = [
-            {
-                "role": "system",
-                "content": "당신은 대화 기록을 분석하여 질문에 대한 정확한 답변을 제공하는 AI입니다. "
-                   "제공된 데이터(RAG 검색 결과)와 현재 대화 내용을 기반으로만 답변하세요. "
-                   "추측하거나 사실이 아닌 내용을 생성하지 마세요. "
-                   "만약 주어진 정보에서 답을 찾을 수 없다면, '현재 대화 내용에서는 알 수 없는 정보입니다.'라고 답변하세요."
-            }
-        ]
+        messages = []
         
+        # 시스템 메시지 추가
+        messages.append({
+            "role": "system",
+            "content": ("당신은 대화 기록을 기반으로 질문에 대한 정확한 답변을 제공하는 AI입니다. "
+                "제공된 데이터(RAG 검색 결과) 및 최근 대화 기록을 기반으로 최대한 정확한 답변을 제공하세요. "
+                "정보의 신뢰도를 판단하여 다음과 같이 응답해야 합니다:\n\n"
+                "1️⃣ 신뢰도가 높은 경우 → '대화 기록에 따르면 ...' 형태로 구체적으로 응답\n"
+                "2️⃣ 신뢰도가 중간인 경우 → '대화 내용에서 단서가 있지만 확실하지 않습니다.' 라고 설명\n"
+                "3️⃣ 신뢰도가 낮은 경우 → '현재 대화 내용만으로는 확신할 수 없습니다.' 라고 응답\n"
+                "4️⃣ 대화에 해당 내용이 없는 경우 → '현재 대화 내용에서는 확인할 수 없습니다.'\n\n"
+                "절대로 정보를 조작하거나 임의로 생성하지 마세요.")
+        })
+        
+        # FAISS 검색 결과를 컨텍스트로 추가
+        if context:
+            messages.append({
+                "role": "system",
+                "content": f"Relevant context:\n{context}"
+            })
+            
         # 최근 대화 기록 추가 (기본값 : 5개)
         for entry in chat_history:
             messages.append({"role": "user", "content": entry["user"]})
             messages.append({"role": "assistant", "content": entry["bot"]})
             
-        # FAISS 검색 결과를 컨텍스트로 추가
-        if context:
-            messages.append({"role": "system", "content": f"Relevant contenxt:\n{context}"})
-            
-        # 사용자 질문 추가
+        # 현재 사용자 질문 추가
         messages.append({"role": "user", "content": user_question})
+
+        print("[DEBUG] 전송할 메시지:", messages)
 
         # LLM API 호출
         response = client.chat.completions.create(
-            model="sonar",
+            model="gpt-4o-mini",
             messages=messages,
             max_tokens=150,
             temperature=0.7

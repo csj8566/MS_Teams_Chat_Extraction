@@ -52,9 +52,12 @@ def search_faiss(query, k=3):
         if idx != -1:
             cursor = db.cursor(dictionary=True)
             
-            # 벡터 유사도가 가장 높은 k개의 정보들이 원본 데이터베이스에서는 어디에 있는지 찾아냄냄
+            # numpy.int64를 Python int로 변환
+            idx_int = int(idx)
+            
+            # 벡터 유사도가 가장 높은 k개의 정보들이 원본 데이터베이스에서는 어디에 있는지 찾아냄
             cursor.execute(
-                "SELECT created_at, sender_name, message FROM chat_messages LIMIT 1 OFFSET %s", (idx,)
+                "SELECT created_at, sender_name, message FROM chat_messages LIMIT 1 OFFSET %s", (idx_int,)
             )
             result = cursor.fetchone()
             cursor.close()
