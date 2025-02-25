@@ -347,10 +347,20 @@
         document.getElementById("userInput").value = "";
 
         try {
+            // 세션 ID 추가 (브라우저 세션 또는 임의의 ID 사용)
+            const sessionId = localStorage.getItem('chatSessionId') ||
+                Math.random().toString(36).substring(2, 15);
+
+            // 세션 ID 저장
+            localStorage.setItem('chatSessionId', sessionId);
+
             const response = await fetch("http://localhost:8000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question: userInput })
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    question: userInput
+                })
             });
             const data = await response.json();
             chatbox.innerHTML += `<p class="bot-message">${data.answer}</p>`;
