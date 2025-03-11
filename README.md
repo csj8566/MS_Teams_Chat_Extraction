@@ -1,4 +1,4 @@
-# **Microsoft Teams 채팅 데이터 추출기**  
+# **Microsoft Teams 채팅 데이터 추출기 & 챗봇**  
 ---
 ![설명](images/Workflow.png)
 ---
