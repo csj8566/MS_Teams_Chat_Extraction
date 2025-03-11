@@ -17,7 +17,7 @@ print(f"[DEBUG] api key 확인 : {OPENAI_API_KEY}")
 db = mysql.connector.connect(
     host="localhost",
     user="root",
-    password='1234',
+    password=os.getenv("DB_PASSWORD"),
     database='ms_chats'
 )
 

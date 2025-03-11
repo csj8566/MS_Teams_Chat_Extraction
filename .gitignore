@@ -1,6 +1,6 @@
 *.csv
 *.json
-*.txt
+config.txt
 backend/MS_Teams_chat_Extraction/src/main/resources/env.properties
 fastapi/.env
 *.pyc
