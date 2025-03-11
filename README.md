@@ -1,6 +1,6 @@
 # **Microsoft Teams 채팅 데이터 추출기**  
 ---
-![설명](images/Extractor.png)
+![설명](images/Workflow.png)
 ---
 ## 🚀 **현재 진행 상황**
 ### ✅ **1. CSV 데이터를 기반으로 데이터베이스 구축 및 웹 애플리케이션 개발**
