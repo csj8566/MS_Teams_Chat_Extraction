@@ -1,13 +1,10 @@
-# FAISS라는 벡터스토어를 활용하여 벡터 검색을 수행하는 코드
-# 사용자의 질문을 벡터로 변환하여, FAISS에서 유사한 벡터를 검색함
-# 단, FAISS는 벡터만 저장하므로, 검색된 벡터의 원본 데이터(문서)는 MySQL에서 다시 조회해야 함
-# 이를 통해 RAG(Retrieval-Augmented Generation) 기반 답변을 생성함
+# LangChain 기반 벡터스토어를 활용하여 벡터 검색을 수행하는 코드
+# LangChain의 FAISS 벡터스토어를 사용하여 RAG(Retrieval-Augmented Generation) 검색을 구현함
+# 사용자 질문을 임베딩하여 가장 관련성 높은 문서를 검색함
+# LangChain의 FAISS 구현은 벡터와 함께 문서 내용과 메타데이터를 저장하므로 별도의 데이터베이스 조회가 필요 없음
 
-import faiss
-import numpy as np
-import mysql.connector
 from langchain_openai import OpenAIEmbeddings
-import openai
+from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 import os
 
@@ -17,56 +14,45 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") 
 print(f"[DEBUG] api key 확인 : {OPENAI_API_KEY}")
 
-# open ai 임베딩 모델 : 벡터화 진행
+# LangChain 임베딩 모델 초기화
 embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY,
                                    model="text-embedding-3-small")
 print("[DEBUG] embedding_model에 key 잘 들어갔는지 확인", embedding_model)
 
-# setup_faiss.py 에서 만든 FAISS 인덱스를 불러옴
-index = faiss.read_index("faiss_index")
-
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="1234",
-    database="ms_chats"
-)
-
-# OpenAI 를 사용하여 텍스트를 벡터로 변환
-def get_embedding(text):
-    """OpenAI를 사용하여 텍스트를 벡터로 변환"""
-    response = embedding_model.embed_query(text)
-    return np.array(response)
+# LangChain FAISS 벡터스토어 로드
+vectorstore = FAISS.load_local("faiss_index_langchain", embedding_model)
+print("[DEBUG] 벡터스토어 로드 완료")
 
 
 # FAISS를 사용하여 유사한 정보 검색
 def search_faiss(query, k=3):
-    query_vector = get_embedding(query).astype('float32').reshape(1, -1) # 입력 받은 쿼리를 벡터화
+    """
+    사용자 질문과 관련된 문서를 벡터스토어에서 검색
     
-    # 각 벡터와의 유사도(거리값), FAISS 내부에서 저장된 벡터들의 인덱스 번호(저장 순서)를 반환
-    distances, indicies = index.search(query_vector, k) # 인덱스를 사용해서 입력 쿼리와 유사한 정보를 k개 찾음
-    
+    Args:
+        query (str): 사용자 질문
+        k (int): 검색할 문서 개수
+        
+    Returns:
+        list: 관련 문서 목록
+    """
+    # similarity_search_with_score는 (document, score) 형태의 튜플 리스트를 반환
+    # similarity_search_with_score 함수가 입력받은 query도 알아서 embedding 해줌
+    docs_and_scores = vectorstore.similarity_search_with_score(query, k=k)
+   
     retrieved_docs = []
     # k개 정보를 하나씩 돌면서 판단
-    for idx in indicies[0]:
-        if idx != -1:
-            cursor = db.cursor(dictionary=True)
-            
-            # numpy.int64를 Python int로 변환
-            idx_int = int(idx)
-            
-            # 벡터 유사도가 가장 높은 k개의 정보들이 원본 데이터베이스에서는 어디에 있는지 찾아냄
-            cursor.execute(
-                "SELECT created_at, sender_name, message FROM chat_messages LIMIT 1 OFFSET %s", (idx_int,)
-            )
-            result = cursor.fetchone()
-            cursor.close()
-            
-            # 원본 데이터베이스에서 정보를 성공적으로 찾아냈다면
-            if result:
-                doc = f"created_at: {result['created_at']}\nsender_name: {result['sender_name']}\nmessage: {result['message']}"
-                retrieved_docs.append(doc)
-                
-    return retrieved_docs
-    
+    for doc, score in docs_and_scores:
+        # 점수가 낮을수록 유사도가 높음 (L2 거리 기준)
+        print(f"[DEBUG] 문서 점수 : {score}")
 
+        # Document 객체에서 내용 추출
+        content = doc.page_content
+        metadata = doc.metadata
+
+        # 메타데이터 정보 추가
+        retrieval_info = f"{content}\n검색 점수 : {score}"
+        retrieved_docs.append(retrieval_info)
+
+
+    return retrieved_docs
