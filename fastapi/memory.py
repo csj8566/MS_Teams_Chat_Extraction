@@ -25,9 +25,9 @@ print(f"[DEBUG] - URL: {REDIS_URL}")
 
 # 세션별 메모리 객체를 캐싱하기 위한 딕셔너리
 # 같은 session_id 하에서는 새로운 메모리 객체 만들지 않게 하기 위함
-memory_cache = {}
+memory_cache = {}              
 
-def get_langchain_memory(session_id, max_history=5):
+def get_langchain_memory(session_id, max_history=3):
     '''
     특정 세션에 대한 LangChain 메모리 객체를 반환
 

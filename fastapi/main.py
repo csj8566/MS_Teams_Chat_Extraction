@@ -5,11 +5,12 @@ import os
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagePlaceHolder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
-from langcahin.schema import AIMessage, HumanMessage, SystemMessage
+from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from memory import get_langchain_memory, save_chat_history, get_chat_history
 from vectorstore import search_faiss
+from langchain.vectorstores import FAISS
 
 
 
@@ -81,7 +82,7 @@ def chat(request: ChatRequest):
         # LangChain 체인 구성
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
-            MessagePlaceHolder(variable_name="chat_history"), # 나중에 실제 대화 기록이 들어갈 자리를 미리 확보 ("여기에 chat_history라는 이름의 값이 들어갈 거야!")
+            MessagesPlaceholder(variable_name="chat_history"), # 나중에 실제 대화 기록이 들어갈 자리를 미리 확보 ("여기에 chat_history라는 이름의 값이 들어갈 거야!")
             ("human", "{input}") # LangChain만의 특별한 템플릿 문법, 나중에 실제 사용자 질문이 들어갈 자리를 표시
         ])
 

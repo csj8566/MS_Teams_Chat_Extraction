@@ -20,7 +20,7 @@ embedding_model = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY,
 print("[DEBUG] embedding_model에 key 잘 들어갔는지 확인", embedding_model)
 
 # LangChain FAISS 벡터스토어 로드
-vectorstore = FAISS.load_local("faiss_index_langchain", embedding_model)
+vectorstore = FAISS.load_local("faiss_index_langchain", embedding_model, allow_dangerous_deserialization=True)
 print("[DEBUG] 벡터스토어 로드 완료")
 
 
