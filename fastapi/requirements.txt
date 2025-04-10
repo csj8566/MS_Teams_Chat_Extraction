@@ -8,4 +8,7 @@ mysql-connector-python
 faiss-cpu
 numpy
 langchain-openai
+langchain-community
+langchain-core
+langchain
 tqdm

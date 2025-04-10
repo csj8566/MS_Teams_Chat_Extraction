@@ -1,5 +1,5 @@
-# Redis 를 사용하여 최근 5개의 질문과 그에 대한 답변을 챗봇이 기억하도록 합니다.
-# 챗봇이 과거 대화를 기억하지 못하는 문제를 해결하기 위한 코드입니다.
+# Redis 를 사용하여 최근 5개의 질문과 그에 대한 답변을 챗봇이 기억하도록 함
+# 챗봇이 과거 대화를 기억하지 못하는 문제를 해결하기 위한 코드
 # LangChain의 메모리 시스템을 사용하여 챗봇 대화 기록을 관리하는 코드
 # Redis를 사용하여 대화 기록을 저장하고, LangChain의 ConversationBufferMemory를 활용하여 대화 컨텍스트 유지
 
@@ -45,11 +45,11 @@ def get_langchain_memory(session_id, max_history=5):
     
     try:
         '''
-        ConversationBufferMemory (상위 계층: 메모리 관리)
+        ConversationBufferMemory (메모리 관리 : RedisChatMessageHistory를 사용하여 대화 컨텍스트를 관리(입력을 처리해 RedisChatMessageHistory에 전달))
         ↓
-        RedisChatMessageHistory (하위 계층: 저장소)
+        RedisChatMessageHistory (메시지 저장소 : Redis 서버와 직접 통신하여 메시지를 저장하고 불러옴, 메시지를 Redis 서버에 저장)
         ↓
-        Redis (데이터베이스)
+        Redis (데이터베이스 : 실제 데이터가 물리적으로 저장장)
         '''
 
         # Redis 기반 메시지 저장소 생성
@@ -128,9 +128,11 @@ def get_chat_history(session_id):
         ]
     }
     '''
-    
-    # 빈 딕셔너리는 기본적으로 "추가 조건 없이 현재 저장된 모든 대화 기록을 가져오라"는 의미
-    messages = memory.load_memory_variables({})
+
+    # ConversationBufferMemory는 RedisChatMessageHistory에 메시지 요청
+    # RedisChatMessageHistory는 Redis 서버에서 데이터를 가져옴
+    # 데이터는 ConversationBufferMemory를 통해 처리되어 반환됨
+    messages = memory.load_memory_variables({}) # 빈 딕셔너리는 기본적으로 "추가 조건 없이 현재 저장된 모든 대화 기록을 가져오라"는 의미
 
     # 메시지 형식이 비어있으면 빈 리스트 반환
     if not messages or "chat_history" not in messages:

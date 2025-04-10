@@ -65,5 +65,3 @@ with ProgressManager(embedding_model):
 print("[DEBUG] FAISS 인덱스 저장 중...")
 vectorstore.save_local("faiss_index_langchain")
 print("[DEBUG] FAISS 인덱스 저장 완료!")
-
-
